@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<title>4x4 IN BOX</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #101010;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+header {
+    text-align: center;
+    padding: 22px 15px;
+    background: #181818;
+    border-bottom: 2px solid #333;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 900;
+}
+
+header p {
+    margin: 6px 0 0;
+    color: #aaa;
+}
+
+.container {
+    padding: 15px;
+    max-width: 700px;
+    margin: auto;
+}
+
+.vehicle {
+    background: #1d1d1d;
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 15px;
+    border: 3px solid #444;
+    box-shadow: 0 4px 12px rgba(0,0,0,.3);
+}
+
+.vehicle-name {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.color {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.yellow {
+    background: #ffd400;
+}
+
+.red {
+    background: #e53935;
+}
+
+.orange {
+    background: #ff7a00;
+}
+
+.celeste {
+    background: #4fc3f7;
+}
+
+.black {
+    background: #000;
+}
+
+.blue {
+    background: #1565c0;
+}
+
+.status {
+    margin-top: 10px;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+.available {
+    color: #35d16f;
+}
+
+.busy {
+    color: #ff4444;
+}
+
+input {
+    width: 100%;
+    padding: 15px;
+    margin-top: 14px;
+    background: #2a2a2a;
+    border: 1px solid #555;
+    border-radius: 10px;
+    color: white;
+    font-size: 17px;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 17px;
+    font-weight: bold;
+    color: white;
+    background: #159447;
+}
+
+button:active {
+    transform: scale(.98);
+}
+
+.stop {
+    background: #c62828;
+}
+
+.timer {
+    text-align: center;
+    font-size: 54px;
+    font-weight: bold;
+    margin: 18px 0;
+    letter-spacing: 2px;
+}
+
+.history {
+    margin-top: 25px;
+    padding: 18px;
+    background: #181818;
+    border-radius: 18px;
+}
+
+.history h2 {
+    margin-top: 0;
+}
+
+.history-item {
+    padding: 13px 0;
+    border-bottom: 1px solid #333;
+    color: #ddd;
+    line-height: 1.5;
+}
+
+.clear-history {
+    background: #555;
+    margin-top: 15px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+
+<h1>4x4 IN BOX</h1>
+
+<p>Control de alquileres RC</p>
+
+</header>
+
+<div class="container">
+
+<div id="vehicles"></div>
+
+<div class="history">
+
+<h2>📋 Historial</h2>
+
+<div id="history"></div>
+
+<button class="clear-history" onclick="clearHistory()">
+Borrar historial
+</button>
+
+</div>
+
+</div>
+
+<script>
+
+const vehicles = [
+
+{
+    id: 1,
+    name: "Defender Amarillo",
+    color: "yellow"
+},
+
+{
+    id: 2,
+    name: "Defender Rojo",
+    color: "red"
+},
+
+{
+    id: 3,
+    name: "Defender Naranja",
+    color: "orange"
+},
+
+{
+    id: 4,
+    name: "Bronco Celeste",
+    color: "celeste"
+},
+
+{
+    id: 5,
+    name: "Chevrolet C10",
+    color: "black"
+},
+
+{
+    id: 6,
+    name: "Ford F100",
+    color: "blue"
+}
+
+];
+
+let active = {};
+
+let history =
+JSON.parse(localStorage.getItem("4x4History")) || [];
+
+function formatTime(seconds) {
+
+    const minutes =
+        Math.floor(seconds / 60);
+
+    const secs =
+        seconds % 60;
+
+    return String(minutes).padStart(2, "0")
+        + ":"
+        + String(secs).padStart(2, "0");
+}
+
+function renderVehicles() {
+
+    const container =
+        document.getElementById("vehicles");
+
+    container.innerHTML = "";
+
+    vehicles.forEach(vehicle => {
+
+        const running =
+            active[vehicle.id];
+
+        const div =
+            document.createElement("div");
+
+        div.className = "vehicle";
+
+        if (!running) {
+
+            div.innerHTML = `
+
+                <div class="vehicle-name">
+
+                    <div class="color ${vehicle.color}">
+                    </div>
+
+                    ${vehicle.name}
+
+                </div>
+
+                <div class="status available">
+                    🟢 DISPONIBLE
+                </div>
+
+                <input
+                    id="client-${vehicle.id}"
+                    type="text"
+                    placeholder="Nombre del cliente (opcional)"
+                >
+
+                <button
+                    onclick="startTimer(${vehicle.id})">
+
+                    ▶ INICIAR TURNO — 15 MIN
+
+                </button>
+
+            `;
+
+        } else {
+
+            div.innerHTML = `
+
+                <div class="vehicle-name">
+
+                    <div class="color ${vehicle.color}">
+                    </div>
+
+                    ${vehicle.name}
+
+                </div>
+
+                <div class="status busy">
+
+                    🔴 EN USO
+
+                    ${running.client
+                        ? "— " + running.client
+                        : ""
+                    }
+
+                </div>
+
+                <div
+                    class="timer"
+                    id="timer-${vehicle.id}">
+
+                    ${formatTime(running.seconds)}
+
+                </div>
+
+                <button
+                    class="stop"
+                    onclick="stopTimer(${vehicle.id})">
+
+                    ⛔ FINALIZAR TURNO
+
+                </button>
+
+            `;
+
+        }
+
+        container.appendChild(div);
+
+    });
+
+}
+
+function startTimer(id) {
+
+    const input =
+        document.getElementById(
+            "client-" + id
+        );
+
+    const client =
+        input.value.trim() ||
+        "Sin nombre";
+
+    const now =
+        new Date();
+
+    const startTime =
+        now.toLocaleTimeString(
+            "es-AR",
+            {
+                hour: "2-digit",
+                minute: "2-digit"
+            }
+        );
+
+    active[id] = {
+
+        client: client,
+
+        seconds: 15 * 60,
+
+        startTime: startTime,
+
+        interval: null
+
+    };
+
+    history.unshift({
+
+        vehicle:
+            vehicles.find(v => v.id === id).name,
+
+        color:
+            vehicles.find(v => v.id === id).color,
+
+        client:
+            client,
+
+        duration:
+            "15 minutos",
+
+        start:
+            startTime
+
+    });
+
+    saveHistory();
+
+    active[id].interval =
+        setInterval(
+            () => updateTimer(id),
+            1000
+        );
+
+    renderVehicles();
+
+}
+
+function updateTimer(id) {
+
+    const timer =
+        active[id];
+
+    if (!timer) return;
+
+    timer.seconds--;
+
+    const element =
+        document.getElementById(
+            "timer-" + id
+        );
+
+    if (element) {
+
+        element.textContent =
+            formatTime(timer.seconds);
+
+    }
+
+    if (timer.seconds <= 0) {
+
+        finishTimer(id);
+
+    }
+
+}
+
+function finishTimer(id) {
+
+    const timer =
+        active[id];
+
+    if (!timer) return;
+
+    clearInterval(timer.interval);
+
+    delete active[id];
+
+    renderVehicles();
+
+    startAlarm(id);
+
+}
+
+function stopTimer(id) {
+
+    if (!active[id]) return;
+
+    clearInterval(
+        active[id].interval
+    );
+
+    delete active[id];
+
+    renderVehicles();
+
+}
+
+let alarmInterval = null;
+
+function startAlarm(id) {
+
+    playAlarm();
+
+    if (alarmInterval) {
+
+        clearInterval(alarmInterval);
+
+    }
+
+    alarmInterval =
+        setInterval(
+            playAlarm,
+            60000
+        );
+
+}
+
+function playAlarm() {
+
+    alert(
+        "⏰ ¡TIEMPO TERMINADO!\n\n" +
+        "El turno de 15 minutos finalizó."
+    );
+
+}
+
+function saveHistory() {
+
+    localStorage.setItem(
+        "4x4History",
+        JSON.stringify(history)
+    );
+
+}
+
+function renderHistory() {
+
+    const container =
+        document.getElementById(
+            "history"
+        );
+
+    if (history.length === 0) {
+
+        container.innerHTML =
+            "<p style='color:#777'>Todavía no hay alquileres.</p>";
+
+        return;
+
+    }
+
+    container.innerHTML = "";
+
+    history.forEach(item => {
+
+        const div =
+            document.createElement("div");
+
+        div.className =
+            "history-item";
+
+        div.innerHTML = `
+
+            🚙 <strong>${item.vehicle}</strong><br>
+
+            👤 ${item.client}<br>
+
+            ⏱️ ${item.duration}<br>
+
+            🕐 Inicio: ${item.start}
+
+        `;
+
+        container.appendChild(div);
+
+    });
+
+}
+
+function clearHistory() {
+
+    if (
+        confirm(
+            "¿Querés borrar todo el historial?"
+        )
+    ) {
+
+        history = [];
+
+        saveHistory();
+
+        renderHistory();
+
+    }
+
+}
+
+renderVehicles();
+
+renderHistory();
+
+</script>
+
+</body>
+</html>
